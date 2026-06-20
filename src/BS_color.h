@@ -29,9 +29,8 @@ IN THE SOFTWARE.
 */
 
 //? instead of using a whole byte for each color channel, what if we used a whole byte for ALL the channels?
-//* BSC (Byte-Size Color) format is similar to that of CIMG, however, every pixel is stored in 1 byte
-//* The bits in the byte represent the following: RRGGGBBA (fun fact: human eyes are the most sensitive to green, so that's the reason why the green channel appears here the most)
-//? (yes i know that introduction of the alpha channel halves the amount of colors that could be represented but trust me, its wort it)
+//* BS (Byte-Size) Color format is similar to that of CIMG, however, every pixel is stored in 1 byte
+//* The bits in the byte represent the following: RRRGGGBB (fun fact: human eyes are the least sensitive to blue, so that's the reason why there is the least of it)
 
 #ifndef BITE_SIZE_COLOR
 #define BITE_SIZE_COLOR
@@ -40,28 +39,52 @@ IN THE SOFTWARE.
 #include <stdint.h>
 #include <malloc.h>
 
-typedef uint8_t BSC_color; // it is recommended to use this type instead of any other because i said so
+#ifndef INVISIBLE_COLOR
+#define INVISIBLE_COLOR (BS_color) {0b11100101} // this kind of acts like any color with alpha channel value 0
+#endif
+
+typedef uint8_t BS_color; // it is recommended to use this type instead of any other because i said so
 
 typedef struct BSC_PD {
     uint16_t width, height;
-    BSC_color* pixels; // this pointer is 8 times larger than just one pixel... glup..
+    BS_color* pixels; // this pointer is 8 times larger than just one pixel... glup..
 } BSC_PD; // stands for Byte-Size Color Pixel Data
 
 void allocBytePixelMemory(BSC_PD* data) {
-    data->pixels=(BSC_color*) calloc(data->width*data->height,1);
+    data->pixels=(BS_color*) calloc(data->width*data->height,1);
 } // same reason for calloc as in CIMG
 
 void freeBytePixelMemory(BSC_PD* data) {
     free(data->pixels);
 }
 
+// for now, only converts clr to ARGB 4-byte int
+int32_t BS_colorToInt(BS_color clr){
+    if (clr==INVISIBLE_COLOR) return 0; // == is good enough for comparison
+    uint8_t r,g,b; // alpha channel is constant, remember?
+    r=clr>>5;
+    g=(clr>>2)-(r<<3);
+    b=clr-(r<<5)-(g<<2);
+
+    if (r*36==252) r=255;
+    else r*=36;
+    if (g*36==252) g=255;
+    else g*=36;
+
+    return (r<<24)+(g<<16)+(b<<8)*85+255; // uhhh
+}
+
 // allows printing colors as normal hex....
-void printColor(BSC_color color) {
-    int8_t r,g,b; // a has only 2 states
-    r=color>>6;
-    g=(color>>3)-(r<<3);
-    b=(color>>1)-(r<<5)-(g<<2);
-    printf("0x%02x%02x%02x%02x",r*85,g*36,b*85,(((uint8_t) (color<<7))>>7)*255);
+void printBS_color(BS_color clr) {    int32_t a=BS_colorToInt(clr);
+    if (a==0) { // if clr==that color, the func will return 0
+        printf("0x00000000\n");
+        return;
+    }
+    uint8_t r,g,b;
+    r=a>>24;
+    g=a>>16;
+    b=a>>8;
+    printf("0x%02x%02x%02xff",r,g,b); // alpha channel will always be FF but for one case
 }
 
 #endif
