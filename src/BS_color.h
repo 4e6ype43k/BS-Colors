@@ -43,6 +43,12 @@ IN THE SOFTWARE.
 #define INVISIBLE_COLOR (BS_color) {0b11100101} // this kind of acts like any color with alpha channel value 0
 #endif
 
+#ifdef BSC_EXTRA_MACROS
+#define MAX_BYTE_COLORS 256 // max amount of colors that could fit in a byte
+#define MAX_DIMENSION_SIZE 65535 // max size of one dimension in a PD
+#define MAX_PIXEL_COUNT 4294836225 // max amount of pixels 1 PD can store
+#endif
+
 typedef uint8_t BS_color; // it is recommended to use this type instead of any other because i said so
 
 typedef struct BSC_PD {
@@ -86,6 +92,34 @@ void printBS_color(BS_color clr) {
     g=a>>16;
     b=a>>8;
     printf("0x%02x%02x%02xff",r,g,b); // alpha channel will always be FF but for one case
+}
+
+// loads file into PD
+void loadFileToPD(BSC_PD* data,int8_t* path){
+	FILE* pFile=fopen(path,"rb");
+	uint8_t sizeData[4];
+	fread(sizeData,1,4,pFile);
+	
+	data->width=(sizeData[0]<<8)+sizeData[1];
+	data->height=(sizeData[2]<<8)+sizeData[3];
+	
+	fclose(pFile);
+}
+
+// stores data in path
+void encodePD(BSC_PD* data,int8_t* path){
+	FILE* pFile=fopen(path,"wb");
+	int8_t a=data->width%256;
+	int8_t b=(data->width-a)/256;
+	fputc(b,pFile);
+	fputc(a,pFile);
+	
+	a=data->height%256;
+	b=(data->height-a)/256;
+	fputc(b,pFile);
+	fputc(a,pFile);
+	
+	fclose(pFile);
 }
 
 #endif
