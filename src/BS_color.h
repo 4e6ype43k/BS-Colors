@@ -75,7 +75,8 @@ int32_t BS_colorToInt(BS_color clr){
 }
 
 // allows printing colors as normal hex....
-void printBS_color(BS_color clr) {    int32_t a=BS_colorToInt(clr);
+void printBS_color(BS_color clr) {
+    int32_t a=BS_colorToInt(clr);
     if (a==0) { // if clr==that color, the func will return 0
         printf("0x00000000\n");
         return;
