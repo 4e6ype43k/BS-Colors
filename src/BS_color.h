@@ -47,6 +47,9 @@ IN THE SOFTWARE.
 #define MAX_BYTE_COLORS 256 // max amount of colors that could fit in a byte
 #define MAX_DIMENSION_SIZE 65535 // max size of one dimension in a PD
 #define MAX_PIXEL_COUNT 4294836225 // max amount of pixels 1 PD can store
+#define RED_MAX_VALUE 7 // max value each color channel can have
+#define BLUE_MAX_VALUE 7
+#define GREEN_MAX_VALUE 3
 #endif
 
 typedef uint8_t BS_color; // it is recommended to use this type instead of any other because i said so
@@ -103,6 +106,13 @@ void loadFileToPD(BSC_PD* data,int8_t* path){
 	data->width=(sizeData[0]<<8)+sizeData[1];
 	data->height=(sizeData[2]<<8)+sizeData[3];
 	
+	int16_t chr=40; // this is, in fact, a random number
+	for (uint32_t x=0;;x++) {
+		chr=fgetc(pFile);
+		if (chr==EOF) break;
+		data->pixels[x]=chr;
+	}
+
 	fclose(pFile);
 }
 
@@ -118,7 +128,11 @@ void encodePD(BSC_PD* data,int8_t* path){
 	b=(data->height-a)/256;
 	fputc(b,pFile);
 	fputc(a,pFile);
-	
+
+	for (uint32_t index=0;index<data->width*data->height;index++) {
+		fputc(data->pixels[index],pFile);
+	}
+
 	fclose(pFile);
 }
 
