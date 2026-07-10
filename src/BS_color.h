@@ -54,16 +54,16 @@ IN THE SOFTWARE.
 
 typedef uint8_t BS_color; // it is recommended to use this type instead of any other because i said so
 
-typedef struct BSC_PD {
+typedef struct PD {
     uint16_t width, height;
     BS_color* pixels; // this pointer is 8 times larger than just one pixel... glup..
-} BSC_PD; // stands for Byte-Size Color Pixel Data
+} PD; // stands for Byte-Size Color Pixel Data
 
-void allocBytePixelMemory(BSC_PD* data) {
+void allocPixelMemory(PD* data) {
     data->pixels=(BS_color*) calloc(data->width*data->height,1);
 } // same reason for calloc as in CIMG
 
-void freeBytePixelMemory(BSC_PD* data) {
+void freePixelMemory(PD* data) {
     free(data->pixels);
 }
 
@@ -151,7 +151,7 @@ void printBS_color(BS_color clr) {
 }
 
 // loads a file to a new PD
-BSC_PD loadFile(int8_t* path) {
+PD loadFile(int8_t* path) {
 	FILE* pFile=fopen(path,"rb");
 	uint8_t sizeData[4];
 	fread(sizeData,1,4,pFile);
@@ -173,7 +173,7 @@ BSC_PD loadFile(int8_t* path) {
 }
 
 // loads file into an existant PD and returns bytes required to store all the pixels
-int32_t loadFileToPD(BSC_PD* data,int8_t* path){
+int32_t loadFileToPD(PD* data,int8_t* path){
 	FILE* pFile=fopen(path,"rb");
 	uint8_t sizeData[4];
 	fread(sizeData,1,4,pFile);
@@ -195,7 +195,7 @@ int32_t loadFileToPD(BSC_PD* data,int8_t* path){
 }
 
 // stores data in path
-void encodePD(BSC_PD* data,int8_t* path){
+void encodePD(PD* data,int8_t* path){
 	FILE* pFile=fopen(path,"wb");
 	int8_t low=data->width; // assigning a 2-byte value to a 1-byte var makes it store only the low byte (probably because they just access the value through the 8-bit registers)
 	int8_t high=(data->width)>>8; // moving it left 8 times is the same as dividing by 256 (2**8=256)
