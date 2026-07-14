@@ -76,9 +76,11 @@ int32_t BS_colorToInt(BS_color clr){
     g=(clr>>2)&7; // 7 is 0b111, anding the shifted color with it will only give bits where 7 bits are high, ignoring all other bits after
     b=clr&3; // 3 is 0b11
 
-    uint8_t four; // i have a long explanation to this part but it is too long to be written
-		  // TODO actually explain all this horrid code
-		  // but for now, enjoy the magic
+    uint8_t four; // right, here is the explanation:
+		  // the highest value r and g can take are both 7, which means that a value of 1 should actually be 255/7 (which is 36ish)
+		  // 36 is 0b00100100, so multiplying by 36 is the same as multiplying by 32 and 4 and adding the two numbers together (mindblowing, init lads?)
+		  // what is interesting is that multiplication by 32 and 4 can both be done by just bitshifting by 5 (2**5=32) and 2 (2**2=4), respectively
+		  // so what i am doing here is storing the value for 4r and 4g to then add (actually, or them) to the shifted r and g, to turn them into actual int values
 	four=r<<2;
 	r<<=5;
 	r|=four;
@@ -87,11 +89,25 @@ int32_t BS_colorToInt(BS_color clr){
 	g<<=5;
 	g|=four;
 
-	if (r==252) r=255; // translation error checking (turns out 255%7!=0 (this gives a very vague description of what just happened))
+	uint8_t one,sixteen; // same here but 85 (255/3) is 0b01010101, so more vars are used
+	one=b;
+	four=b<<2;
+	sixteen=b<<4;
+	b<<=6;
+	b|=one|four|sixteen;
+
+	// the reason why i | instead of + the vars is based on a very curious observation:
+	// if foo is an integer under 9
+	// and if bar==(int) 255/((2**foo)-1)
+	// then in foo*bar, NO bits will overlap (try it yourself)
+	// though when translating back, the original number is very likely to be lost, due to the fact that bar is forced to be an integer, cutting all the fp that comes after
+	// to anyone wondering, the peak loss is around 2.745% (or gamma of 7) and occurs when foo=5
+
+	if (r==252) r=255; // translation error checking (turns out 255%7!=0)
 	if (g==252) g=255;
 
 	// no more crazy bitwise logic
-    return ((r<<24)|(g<<16)|((b<<8)*85))|255; // oring the numbers rather than adding as the byte the channels are writing to are GUARANTEED to be 0
+    return (r<<24)|(g<<16)|(b<<8)|255; // oring the numbers rather than adding as the byte the channels are writing to are GUARANTEED to be 0
 }
 #else
 
@@ -158,8 +174,8 @@ PD loadFile(int8_t* path) {
 	
 	uint16_t width=(sizeData[0]<<8)|sizeData[1];
 	uint16_t height=(sizeData[2]<<8)|sizeData[3];
-	BSC_PD out={width,height}; // no need to specify NULL for pixels as does it for me (i love c)
-	allocBytePixelMemory(&out);
+	PD out={width,height}; // no need to specify NULL for pixels as does it for me (i love c)
+	allocPixelMemory(&out);
 	
 	int16_t chr=1; // a
 	for (uint32_t x=0;;x++) { // for is apparently faster than while

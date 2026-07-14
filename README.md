@@ -1,5 +1,5 @@
-# more funny color stuff
-yay
+# more funny color stuff but 8-bit
+a blast back to the 80s or smth idk
 
 > # Warning
 > Just like CIMG, this project is not really meant to be used for very serious projects and yeah
