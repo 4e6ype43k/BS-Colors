@@ -214,7 +214,7 @@ int32_t loadFileToPD(PD* data,int8_t* path){
 void encodePD(PD* data,int8_t* path){
 	FILE* pFile=fopen(path,"wb");
 	int8_t low=data->width; // assigning a 2-byte value to a 1-byte var makes it store only the low byte (probably because they just access the value through the 8-bit registers)
-	int8_t high=(data->width)>>8; // moving it left 8 times is the same as dividing by 256 (2**8=256)
+	int8_t high=(data->width)>>8; // moving it right 8 times is the same as dividing by 256 (2**8=256)
 	fputc(high,pFile);
 	fputc(low,pFile);
 	
@@ -230,9 +230,27 @@ void encodePD(PD* data,int8_t* path){
 	fclose(pFile);
 }
 
-#ifdef BSC_SIZE_MANIPULATION // alows manipulation of PD size
+#ifdef BSC_SIZE_MANIPULATION // it is what it says on the box
 
+// turns a coordinate to index
+uint32_t coordToPos(PD* data, uint16_t pos[2]) {
+	return pos[1]*data->width+pos[0]; // yw+x (or you could do xh+y+1 but you are adding an extra operation and an extra variable (which too needs to be retrieved from meory))
+}
 
+// good thing i wrote this type of thing in CIMG
+PD scaleBy(PD* data, float scale[2]) {
+	PD out={(uint16_t) data->width*scale[0],(uint16_t) data->height*scale[1]}; // casting a float to an int type pretty much just floors it (as far as i am concerned)
+	allocPixelMemory(&out);
+	for (uint16_t x=0; x<out.width; x++) { // width of new struct
+		uint16_t iX=x/scale[0]; // x of the input PD
+		if (iX>=data->width) iX=data->width-1; // some light error checking
+		for (uint16_t y=0; y<out.height; y++) { // Y are we doing this again? *cricket sound effect*
+			uint16_t iY=y/scale[1];
+			out.pixels[coordToPos(&out,(uint16_t[2]) {x,y})]=data->pixels[coordToPos(data,(uint16_t[2]) {iX,iY})]; // a
+		}
+	}
+	return out;
+}
 
 #endif
 
