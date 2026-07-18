@@ -232,23 +232,79 @@ void encodePD(PD* data,int8_t* path){
 
 #ifdef BSC_SIZE_MANIPULATION // it is what it says on the box
 
+// a vector which stores 2 uint16_t values...
+typedef struct {
+	uint16_t v0;
+       	uint16_t v1; // also, 2+2=4 so we are not wasting any memory on padding
+} u16v2;
+
+// used for cropImage()
+typedef struct {
+	uint16_t v0; // first x
+	uint16_t v1; // first y
+	uint16_t v2; // second x
+	uint16_t v3; // second y
+} u16v4;
+
+// a
+typedef struct {
+	float v0;
+	float v1;
+} fv2;
+
 // turns a coordinate to index
-uint32_t coordToPos(PD* data, uint16_t pos[2]) {
-	return pos[1]*data->width+pos[0]; // yw+x (or you could do xh+y+1 but you are adding an extra operation and an extra variable (which too needs to be retrieved from meory))
+uint32_t coordToPos(PD* data, u16v2 pos) {
+	return pos.v1*data->width+pos.v0; // yw+x (or you could do xh+y+1 but you are adding an extra operation and an extra variable (which too needs to be retrieved from meory))
 }
 
 // good thing i wrote this type of thing in CIMG
-PD scaleBy(PD* data, float scale[2]) {
-	PD out={(uint16_t) data->width*scale[0],(uint16_t) data->height*scale[1]}; // casting a float to an int type pretty much just floors it (as far as i am concerned)
+PD scaleBy(PD* data, fv2 scale) {
+	PD out={(uint16_t) data->width*scale.v0,(uint16_t) data->height*scale.v1}; // casting a float to an int type pretty much just floors it (as far as i am concerned)
 	allocPixelMemory(&out);
 	for (uint16_t x=0; x<out.width; x++) { // width of new struct
-		uint16_t iX=x/scale[0]; // x of the input PD
-		if (iX>=data->width) iX=data->width-1; // some light error checking
+		uint16_t iX=x/scale.v0; // x of the input PD
 		for (uint16_t y=0; y<out.height; y++) { // Y are we doing this again? *cricket sound effect*
-			uint16_t iY=y/scale[1];
-			out.pixels[coordToPos(&out,(uint16_t[2]) {x,y})]=data->pixels[coordToPos(data,(uint16_t[2]) {iX,iY})]; // a
+			uint16_t iY=y/scale.v1;
+			out.pixels[coordToPos(&out,(u16v2) {x,y})]=data->pixels[coordToPos(data,(u16v2) {iX,iY})]; // this should work
 		}
 	}
+	return out;
+}
+
+// returns pixels in data from first coord in the u16v4 to the second coord
+PD cropImage(PD* data, u16v4 crop) {
+	u16v2 topLeft, bottomRight; // we will start at top left and slowly go to bottom right, copying the pixels in the process
+	
+	if (crop.v0>crop.v2) {
+		topLeft.v0=crop.v2;
+		bottomRight.v0=crop.v0;
+	} else {
+		topLeft.v0=crop.v0;
+		bottomRight.v0=crop.v2;
+	}
+
+	if (crop.v1>crop.v3) {
+		topLeft.v1=crop.v3;
+		bottomRight.v1=crop.v1;
+	} else {
+		topLeft.v1=crop.v1;
+		bottomRight.v1=crop.v3;
+	}
+	
+	PD out={bottomRight.v0-topLeft.v0+1,bottomRight.v1-topLeft.v1+1}; // +1 because if the coords are the same, it will give a 0-size PD
+	allocPixelMemory(&out); // dont forget to alloc memory!
+
+	uint32_t index=0; // index of pixel we want to write to in out
+	u16v2 pos={0}; // current data pos
+	for (uint16_t x=topLeft.v0; x<=bottomRight.v0; x++) { // <= as < will produce nothing when tl.v0==br.v0 (which is bad)
+		pos.v0=x;
+		for (uint16_t y=topLeft.v1; y<=bottomRight.v1; y++) {
+			pos.v1=y;
+			out.pixels[index]=data->pixels[coordToPos(data,pos)];
+			index++;
+		}
+	}
+
 	return out;
 }
 
