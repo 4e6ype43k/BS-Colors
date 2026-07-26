@@ -107,7 +107,7 @@ int32_t BS_colorToInt(BS_color clr){
 	if (g==252) g=255;
 
 	// no more crazy bitwise logic
-    return (r<<24)|(g<<16)|(b<<8)|255; // oring the numbers rather than adding as the byte the channels are writing to are GUARANTEED to be 0
+    return (r<<16)|(g<<8)|(b)|0xFF000000; // oring the numbers rather than adding as the byte the channels are writing to are GUARANTEED to be 0
 }
 #else
 
@@ -120,7 +120,7 @@ int32_t BS_colorToInt(BS_color clr) {
 	r=clr>>5; // same magic as before
 	g=(clr>>2)&7;
 	b=clr&3;
-	return ((rgLUT[r]<<24)|(rgLUT[g]<<16)|(bLUT[b]<<8))|255; // same thing with or but now with LUTs
+	return ((rgLUT[r]<<16)|(rgLUT[g]<<8)|(bLUT[b]))|0xFF000000; // same thing with or but now with LUTs
 }
 
 // adds two colors (literally just adds the channel values and if they overflow, just sets them to the max values)
