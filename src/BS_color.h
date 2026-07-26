@@ -61,6 +61,12 @@ typedef struct PD {
 
 void allocPixelMemory(PD* data) {
     data->pixels=(BS_color*) calloc(data->width*data->height,1);
+
+	for (uint16_t x=0; x<data->width; x++) {
+		for (uint16_t y=0; y<data->height; y++) {
+			data->pixels[y*data->width+x]=INVISIBLE_COLOR; // invisible
+		}
+	}
 } // same reason for calloc as in CIMG
 
 void freePixelMemory(PD* data) {
