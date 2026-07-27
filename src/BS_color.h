@@ -73,9 +73,14 @@ void freePixelMemory(PD* data) {
     free(data->pixels);
 }
 
+typedef enum {
+	ARGB,
+	RGBA
+} CONVERSION_CHOICE;
+
 #ifndef BSC_LUT // if defined, uses a LUT for the values (making the program run faster ig)
-// for now, only converts clr to ARGB 4-byte int
-int32_t BS_colorToInt(BS_color clr){
+// for now, only converts clr to ARGB or RGBA 4-byte int, type specifies output (RGBA or ARGB)
+int32_t BS_colorToInt(BS_color clr, CONVERSION_CHOICE type){
     if (clr==INVISIBLE_COLOR) return 0; // == is good enough for comparison
     uint8_t r,g,b; // alpha channel is constant, remember?
     r=clr>>5; // last 5 bits are for g and b
@@ -107,26 +112,39 @@ int32_t BS_colorToInt(BS_color clr){
 	// and if bar==(int) 255/((2**foo)-1)
 	// then in foo*bar, NO bits will overlap (try it yourself)
 	// though when translating back, the original number is very likely to be lost, due to the fact that bar is forced to be an integer, cutting all the fp that comes after
-	// to anyone wondering, the peak loss is around 2.745% (or gamma of 7) and occurs when foo=5
+	// for anyone wondering, the peak loss is around 2.745% (or delta of 7) and occurs when foo=5
 
 	if (r==252) r=255; // translation error checking (turns out 255%7!=0)
 	if (g==252) g=255;
 
 	// no more crazy bitwise logic
-    return (r<<16)|(g<<8)|(b)|0xFF000000; // oring the numbers rather than adding as the byte the channels are writing to are GUARANTEED to be 0
+	switch (type) {
+		case ARGB:
+		return (r<<16)|(g<<8)|b|0xFF000000; // oring the numbers rather than adding as the byte the channels are writing to are GUARANTEED to be 0
+		// no need to break as we are returning back to the caller function
+		
+		case RGBA:
+		return (r<<24)|(g<<16)|(b<<8)|255;
+	}
 }
 #else
 
 uint8_t rgLUT={0,36,72,108,144,180,216,255}; // the amount of bits r and g channels occupy are the same, so creating two different LUTs for both would be wasteful (im bad at explaining stuff, ok?)
 uint8_t bLUT={0,85,170,255};
 
-int32_t BS_colorToInt(BS_color clr) {
+int32_t BS_colorToInt(BS_color clr,CONVERSION_CHOICE type) {
 	if (clr==INVISIBLE_COLOR) return 0;
 	uint8_t r,g,b;
 	r=clr>>5; // same magic as before
 	g=(clr>>2)&7;
 	b=clr&3;
-	return ((rgLUT[r]<<16)|(rgLUT[g]<<8)|(bLUT[b]))|0xFF000000; // same thing with or but now with LUTs
+	switch (type) {
+		case ARGB:
+		return ((rgLUT[r]<<16)|(rgLUT[g]<<8)|(bLUT[b]))|0xFF000000; // same thing with or but now with LUTs
+
+		case RGBA:
+		return (rgLUT[r]<<24)|(rgLUT[g]<<16)|(bLUT[b]<<8)|255;
+	}
 }
 
 // adds two colors (literally just adds the channel values and if they overflow, just sets them to the max values)
@@ -159,17 +177,26 @@ BS_color addBS_colors(BS_color clr0, BS_color clr1) {
 #endif
 
 // allows printing colors as 4 byte (or 8 nybble (or nibble)) hex....
-void printBS_color(BS_color clr) {
-    int32_t a=BS_colorToInt(clr);
+void printBS_color(BS_color clr,CONVERSION_CHOICE type) {
+    int32_t a=BS_colorToInt(clr,type);
     if (a==0) { // if clr==that color, the func will return 0
         printf("0x00000000\n");
         return;
     }
-    uint8_t r,g,b;
+    uint8_t r,g,b,alpha;
     r=a>>24;
     g=a>>16;
     b=a>>8;
-    printf("0x%02x%02x%02xff",r,g,b); // alpha channel will always be FF but for one case
+    alpha=a;
+    switch (type) {
+	    case RGBA:
+    	    printf("0x%02x%02x%02xff",r,g,b); // alpha channel will always be FF but for one case
+	    break;
+
+	    case ARGB:
+	    printf("0xff%02x%02x%02x",g,b,alpha);
+	    break;
+	}
 }
 
 // loads a file to a new PD
