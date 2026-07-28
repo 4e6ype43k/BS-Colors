@@ -287,7 +287,7 @@ typedef struct {
 
 // turns a coordinate to index
 uint32_t coordToPos(PD* data, u16v2 pos) {
-	return pos.v1*data->width+pos.v0; // yw+x (or you could do xh+y+1 but you are adding an extra operation and an extra variable (which too needs to be retrieved from meory))
+	return pos.v1*data->width+pos.v0; // yw+x (or you could do xh+y+1 but you are adding an extra operation and an extra variable (which too needs to be retrieved from memory))
 }
 
 // good thing i wrote this type of thing in CIMG
@@ -339,6 +339,50 @@ PD cropImage(PD* data, u16v4 crop) {
 	}
 
 	return out;
+}
+
+typedef enum {
+	QUARTER_CLOCKWISE,
+	HALF,
+	QUARTER_COUNTERCLOCKWISE
+} ROTATION_OPTION;
+
+// not really size manipulation but i thought that this would fit here
+PD turn(PD* data, ROTATION_OPTION turn_amount) {
+	uint32_t counter=0;
+	PD out;
+	switch (turn_amount) {
+		case QUARTER_CLOCKWISE: // i aint explaining allat :joy_cat:
+		out.width=data->height;
+		out.height=data->width;
+		allocPixelMemory(&out);
+		for (uint16_t x=0;x<data->width;x++) {
+			for (uint16_t y=data->height-1;y!=65535;y--) out.pixels[counter++]=data->pixels[y*data->width+x];
+		}
+		return out;
+		break;
+
+		case QUARTER_COUNTERCLOCKWISE:
+		out.width=data->width;
+		out.height=data->height;
+		allocPixelMemory(&out);
+		for (uint16_t x=data->width-1;x!=65535;x--) {
+			for (uint16_t y=0;y<data->height;y++) out.pixels[counter++]=data->pixels[y*data->width+x];
+		}
+		return out;
+		break;
+
+		case HALF:
+		out.width=data->height;
+		out.height=data->width;
+		allocPixelMemory(&out);
+		for (uint32_t x=0;x<data->width*data->height;x++) out.pixels[x]=data->pixels[data->width*data->height-1-x]; // what am i even doing
+		return out;
+		break;
+
+		default: // we are assuming that anything else is just a 0 turn
+		return *data;
+	}
 }
 
 #endif
