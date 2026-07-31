@@ -304,6 +304,12 @@ PD scaleBy(PD* data, fv2 scale) {
 	return out;
 }
 
+// similar to scaleBy() but instead of scaling image based on the scale factor, scales it to the desired size
+PD scaleTo(PD* data,u16v2 size) {
+	fv2 scale={(float) size.v0/data->width,(float) size.v1/data->height};
+	return scaleBy(data,scale); // it is this easy
+}
+
 // returns pixels in data from first coord in the u16v4 to the second coord
 PD cropImage(PD* data, u16v4 crop) {
 	u16v2 topLeft, bottomRight; // we will start at top left and slowly go to bottom right, copying the pixels in the process
