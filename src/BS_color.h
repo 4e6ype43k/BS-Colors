@@ -329,16 +329,16 @@ PD cropImage(PD* data, u16v4 crop) {
 		topLeft.v1=crop.v1;
 		bottomRight.v1=crop.v3;
 	}
-	
+
 	PD out={bottomRight.v0-topLeft.v0+1,bottomRight.v1-topLeft.v1+1}; // +1 because if the coords are the same, it will give a 0-size PD
 	allocPixelMemory(&out); // dont forget to alloc memory!
 
 	uint32_t index=0; // index of pixel we want to write to in out
 	u16v2 pos={0}; // current data pos
-	for (uint16_t x=topLeft.v0; x<=bottomRight.v0; x++) { // <= as < will produce nothing when tl.v0==br.v0 (which is bad)
-		pos.v0=x;
-		for (uint16_t y=topLeft.v1; y<=bottomRight.v1; y++) {
-			pos.v1=y;
+	for (uint16_t y=topLeft.v1; y<=bottomRight.v1; y++) { // <= as < will produce nothing when tl.v0==br.v0 (which is bad)
+		pos.v1=y;
+		for (uint16_t x=topLeft.v0; x<=bottomRight.v0; x++) {
+			pos.v0=x;
 			out.pixels[index]=data->pixels[coordToPos(data,pos)];
 			index++;
 		}
