@@ -199,9 +199,12 @@ void printBS_color(BS_color clr,CONVERSION_CHOICE type) {
 	}
 }
 
-// loads a file to a new PD
+// loads a file to a new PD or gives a zero-size one if fails to open the given file
 PD loadFile(int8_t* path) {
 	FILE* pFile=fopen(path,"rb");
+	if (!pFile) {
+		return (PD) {0};
+	}
 	uint8_t sizeData[4];
 	fread(sizeData,1,4,pFile);
 	
