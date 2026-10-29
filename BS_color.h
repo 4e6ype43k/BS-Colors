@@ -147,6 +147,8 @@ int32_t BS_colorToInt(BS_color clr,CONVERSION_CHOICE type) {
 	}
 }
 
+#endif
+
 // adds two colors (literally just adds the channel values and if they overflow, just sets them to the max values)
 BS_color addBS_colors(BS_color clr0, BS_color clr1) {
 	if (clr0==INVISIBLE_COLOR) return clr1; // idk
@@ -173,8 +175,6 @@ BS_color addBS_colors(BS_color clr0, BS_color clr1) {
 
 	return (r<<5)|(g<<2)|b; // but i have some for this!
 }
-
-#endif
 
 // allows printing colors as 4 byte (or 8 nybble (or nibble)) hex....
 void printBS_color(BS_color clr,CONVERSION_CHOICE type) {
@@ -224,27 +224,28 @@ PD loadFile(int8_t* path) {
 	return out;
 }
 
-// loads file into an existant PD and returns bytes required to store all the pixels
-int32_t loadFileToPD(PD* data,int8_t* path){
-	FILE* pFile=fopen(path,"rb");
-	uint8_t sizeData[4];
-	fread(sizeData,1,4,pFile);
-	
-	uint16_t width=(sizeData[0]<<8)|sizeData[1]; // wait a second, i can do this here too!
-	uint16_t height=(sizeData[2]<<8)|sizeData[3];
-	data->width=width;
-	data->height=height;
-
-	int16_t chr=40; // this is, in fact, a random number
-	for (uint32_t x=0;;x++) {
-		chr=fgetc(pFile); // fread offsets the char* in FILE
-		if (chr==EOF) break;
-		data->pixels[x]=chr;
-	}
-
-	fclose(pFile);
-	return width*height;
-}
+// deprecated because it is genuinely useless
+//// loads file into an existant PD and returns bytes required to store all the pixels
+//int32_t loadFileToPD(PD* data,int8_t* path){
+//	FILE* pFile=fopen(path,"rb");
+//	uint8_t sizeData[4];
+//	fread(sizeData,1,4,pFile);
+//	
+//	uint16_t width=(sizeData[0]<<8)|sizeData[1]; // wait a second, i can do this here too!
+//	uint16_t height=(sizeData[2]<<8)|sizeData[3];
+//	data->width=width;
+//	data->height=height;
+//
+//	int16_t chr=40; // this is, in fact, a random number
+//	for (uint32_t x=0;;x++) {
+//		chr=fgetc(pFile); // fread offsets the char* in FILE
+//		if (chr==EOF) break;
+//		data->pixels[x]=chr;
+//	}
+//
+//	fclose(pFile);
+//	return width*height;
+//}
 
 // stores data in path
 void encodePD(PD* data,int8_t* path){
@@ -391,6 +392,26 @@ PD turn(PD* data, ROTATION_OPTION turn_amount) {
 
 		default: // we are assuming that anything else is just a 0 turn
 		return *data;
+	}
+}
+
+// also not size manipulation but i don't care
+// replaces all instances of clr0 with clr1 in the specified area in data
+// also area is x0y0x1y1, not xywh
+void replaceArea(BS_color clr0, BS_color clr1, PD* data,u16v4 area) {
+	for (uint16_t x=area.v0;x<=area.v2; x++) {
+		for (uint16_t y=area.v1;y<=area.v3; y++) {
+			if (data->pixels[coordToPos(data,(u16v2) {x,y})]==clr0) data->pixels[coordToPos(data,(u16v2) {x,y})]=clr1;
+		}
+	}
+}
+
+// same as replaceArea but replaces ALL instances of clr0 with clr1, not bounded by an area
+void replaceAllColor(BS_color clr0,BS_color clr1,PD* data) {
+	for (uint16_t x=0;x<=data->width; x++) { // hmmm this code looks oddly familiar, i wonder where i saw it before...
+		for (uint16_t y=0;y<=data->height; y++) {
+			if (data->pixels[coordToPos(data,(u16v2) {x,y})]==clr0) data->pixels[coordToPos(data,(u16v2) {x,y})]=clr1;
+		}
 	}
 }
 
